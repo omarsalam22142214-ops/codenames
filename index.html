@@ -1,10 +1,13 @@
-<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>كود نيمز الاحترافية</title>
+    <title>كود نيمز أونلاين</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         :root {
             --red-team: #e74c3c;
@@ -29,12 +32,46 @@
             min-height: 100vh;
         }
 
+        /* شاشات اللعبة */
+        #lobby-screen, #game-screen { display: none; width: 100%; max-width: 1000px; }
+        .active-screen { display: flex !important; flex-direction: column; align-items: center; }
+
+        /* ستايل اللوبي */
+        .lobby-container {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .lobby-container input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border: none;
+            text-align: center;
+            font-family: 'Cairo';
+            font-size: 18px;
+            box-sizing: border-box;
+        }
+        .room-display {
+            font-size: 32px;
+            color: #2ecc71;
+            letter-spacing: 5px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        /* ستايل اللعبة الأساسي */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            max-width: 1000px;
             margin-bottom: 20px;
             background: rgba(255, 255, 255, 0.1);
             padding: 15px 30px;
@@ -79,7 +116,10 @@
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            width: 100%;
         }
+
+        .controls button { width: auto; }
 
         button:hover { transform: translateY(-2px); opacity: 0.9; }
         button:active { transform: translateY(0); }
@@ -87,12 +127,12 @@
         .btn-new { background-color: #2ecc71; color: white; }
         .btn-spy { background-color: #9b59b6; color: white; }
         .btn-end-turn { background-color: #f1c40f; color: #2c3e50; }
+        .btn-leave { background-color: #e74c3c; color: white; margin-top: 20px; }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 12px;
-            max-width: 1000px;
             width: 100%;
         }
 
@@ -120,7 +160,6 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
-        /* تأثير اكتشاف الكارت */
         .card.revealed {
             transform: scale(0.95);
             box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
@@ -133,14 +172,10 @@
         .card.revealed.neutral { background-color: var(--neutral); color: var(--card-text); }
         .card.revealed.assassin { background-color: var(--assassin); }
 
-        /* وضع القائد - تلوين خفيف لمعرفة الأدوار */
         .spymaster-mode .card:not(.revealed)::after {
             content: '';
             position: absolute;
-            top: 5px;
-            right: 5px;
-            bottom: 5px;
-            left: 5px;
+            top: 5px; right: 5px; bottom: 5px; left: 5px;
             border-radius: 6px;
             border: 4px solid transparent;
             pointer-events: none;
@@ -151,7 +186,6 @@
         .spymaster-mode .card.neutral:not(.revealed)::after { border-color: rgba(235, 213, 179, 0.6); background: rgba(235, 213, 179, 0.2); }
         .spymaster-mode .card.assassin:not(.revealed)::after { border-color: rgba(44, 62, 80, 0.8); background: rgba(44, 62, 80, 0.2); }
 
-        /* شاشة النهاية (Modal) */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -165,10 +199,7 @@
             z-index: 1000;
         }
 
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
 
         .modal-content {
             background: white;
@@ -198,31 +229,69 @@
 </head>
 <body>
 
-    <div class="header">
-        <div class="score-board">
-            <div class="score-red" id="red-score">الأحمر: 0</div>
-            <div class="score-blue" id="blue-score">الأزرق: 0</div>
+    <div id="lobby-screen" class="active-screen">
+        <h1 style="color: #3498db; font-size: 40px; margin-bottom: 5px;">كود نيمز</h1>
+        <p style="color: #8892b0; margin-bottom: 30px;">نسخة الأونلاين - العب مع أصحابك</p>
+        
+        <div class="lobby-container">
+            <button class="btn-new" onclick="createNewRoom()">🆕 إنشاء غرفة جديدة</button>
+            <div style="margin: 30px 0; border-bottom: 1px solid rgba(255,255,255,0.1);"></div>
+            <p>أو ادخل رقم غرفة موجودة:</p>
+            <input type="number" id="join-room-input" placeholder="مثال: 1234">
+            <button class="btn-spy" onclick="joinExistingRoom()">🔑 انضمام للغرفة</button>
         </div>
-        <div id="turn-display" class="turn-indicator">دور فريق: --</div>
     </div>
 
-    <div class="controls">
-        <button class="btn-new" onclick="initGame()">لعبة جديدة</button>
-        <button class="btn-spy" onclick="toggleSpymaster()">نظرة القائد 👁️</button>
-        <button class="btn-end-turn" onclick="endTurn()">إنهاء الدور ⏭️</button>
-    </div>
+    <div id="game-screen">
+        <div style="text-align: center; margin-bottom: 10px; color: #8892b0;">
+            رقم الغرفة: <span id="current-room-display" style="color: #2ecc71; font-weight: bold;"></span>
+        </div>
+        <div class="header">
+            <div class="score-board">
+                <div class="score-red" id="red-score">الأحمر: 9</div>
+                <div class="score-blue" id="blue-score">الأزرق: 8</div>
+            </div>
+            <div id="turn-display" class="turn-indicator" style="background-color: var(--red-team); color: white;">دور فريق: الأحمر</div>
+        </div>
 
-    <div id="game-grid" class="grid"></div>
+        <div class="controls">
+            <button class="btn-new" onclick="startNewMatch()">لعبة جديدة 🔄</button>
+            <button class="btn-spy" onclick="toggleSpymaster()" id="spy-btn">نظرة القائد 👁️</button>
+            <button class="btn-end-turn" onclick="endTurn()">إنهاء الدور ⏭️</button>
+        </div>
+
+        <div id="game-grid" class="grid"></div>
+        
+        <button class="btn-leave" onclick="location.reload()">خروج من الغرفة 🚪</button>
+    </div>
 
     <div class="modal-overlay" id="game-over-modal">
         <div class="modal-content">
             <h2 id="modal-title">انتهت اللعبة!</h2>
             <p id="modal-desc"></p>
-            <button class="btn-new" onclick="initGame()">العب مرة تانية</button>
+            <button class="btn-new" onclick="startNewMatch()">العب دور جديد</button>
+            <button class="btn-leave" onclick="location.reload()" style="margin-top: 10px;">خروج</button>
         </div>
     </div>
 
     <script>
+        // إعدادات Firebase الخاصة بيك (جاهزة وشغالة)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBtIkF-UhkeFa-cxutgJAQpR7K_IjKxloc",
+            authDomain: "spygame-337ee.firebaseapp.com",
+            databaseURL: "https://spygame-337ee-default-rtdb.firebaseio.com", 
+            projectId: "spygame-337ee",
+            storageBucket: "spygame-337ee.firebasestorage.app",
+            messagingSenderId: "179349000426",
+            appId: "1:179349000426:web:6ac2c5993809b50a2b4793"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        // بنك الكلمات
         const wordBank = [
             "مصر", "أسد", "بحر", "قمر", "شمس", "قلم", "كتاب", "هرم", "طائرة", "قطار",
             "قهوة", "شجرة", "عجلة", "ساعة", "نار", "ثلج", "جبل", "مفتاح", "خاتم", "سيف",
@@ -231,51 +300,106 @@
             "بطة", "تفاحة", "موز", "عنب", "رمل", "زجاج", "عطر", "صوت", "لون", "حلم"
         ];
 
+        // متغيرات اللعبة
+        let currentRoom = "";
         let cards = [];
         let isSpymaster = false;
         let currentTurn = '';
         let redRemaining = 0;
         let blueRemaining = 0;
         let gameActive = false;
+        let winnerInfo = null;
+
+        // دوال التنقل
+        function showGameScreen() {
+            document.getElementById('lobby-screen').classList.remove('active-screen');
+            document.getElementById('game-screen').classList.add('active-screen');
+            document.getElementById('current-room-display').innerText = currentRoom;
+        }
+
+        // 1. إنشاء غرفة
+        function createNewRoom() {
+            currentRoom = Math.floor(1000 + Math.random() * 9000).toString();
+            startNewMatch(); // تجهيز اللعبة ورفعها للداتابيز
+            showGameScreen();
+            listenToRoom();
+        }
+
+        // 2. الانضمام لغرفة
+        function joinExistingRoom() {
+            const inputCode = document.getElementById('join-room-input').value.trim();
+            if(!inputCode) return alert("اكتب رقم الغرفة الأول!");
+            
+            db.ref('codenames/' + inputCode).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    currentRoom = inputCode;
+                    showGameScreen();
+                    listenToRoom();
+                } else {
+                    alert("رقم الغرفة غلط أو مش موجودة!");
+                }
+            });
+        }
+
+        // 3. مراقبة التحديثات من السيرفر
+        function listenToRoom() {
+            db.ref('codenames/' + currentRoom).on('value', snapshot => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                cards = data.cards || [];
+                currentTurn = data.currentTurn;
+                redRemaining = data.redRemaining;
+                blueRemaining = data.blueRemaining;
+                gameActive = data.gameActive;
+                winnerInfo = data.winnerInfo;
+
+                renderGrid();
+                updateUI();
+                checkWinnerModal();
+            });
+        }
 
         function shuffle(array) {
             return array.sort(() => Math.random() - 0.5);
         }
 
-        function initGame() {
-            document.getElementById('game-over-modal').classList.remove('active');
-            const gridElement = document.getElementById('game-grid');
-            gridElement.classList.remove('spymaster-mode');
-            isSpymaster = false;
-            gameActive = true;
-
-            // تحديد الفريق اللي هيبدأ عشوائياً
-            currentTurn = Math.random() < 0.5 ? 'red' : 'blue';
-            
-            redRemaining = currentTurn === 'red' ? 9 : 8;
-            blueRemaining = currentTurn === 'blue' ? 9 : 8;
-
-            updateUI();
+        // 4. بدء دور جديد (بيرفع الداتا الجديدة للسيرفر لكل الناس)
+        function startNewMatch() {
+            const startTurn = Math.random() < 0.5 ? 'red' : 'blue';
+            const initialRed = startTurn === 'red' ? 9 : 8;
+            const initialBlue = startTurn === 'blue' ? 9 : 8;
 
             let selectedWords = shuffle([...wordBank]).slice(0, 25);
-            
             let roles = [
-                ...Array(redRemaining).fill('red'),
-                ...Array(blueRemaining).fill('blue'),
+                ...Array(initialRed).fill('red'),
+                ...Array(initialBlue).fill('blue'),
                 ...Array(1).fill('assassin'),
                 ...Array(7).fill('neutral')
             ];
             roles = shuffle(roles);
 
-            cards = selectedWords.map((word, index) => ({
+            const newCards = selectedWords.map((word, index) => ({
                 word: word,
                 role: roles[index],
                 revealed: false
             }));
 
-            renderGrid();
+            // تحديث السيرفر باللعبة الجديدة
+            db.ref('codenames/' + currentRoom).set({
+                cards: newCards,
+                currentTurn: startTurn,
+                redRemaining: initialRed,
+                blueRemaining: initialBlue,
+                gameActive: true,
+                winnerInfo: null
+            });
+            
+            // قفل وضع القائد لو كان مفتوح مع بداية الدور الجديد
+            if(isSpymaster) toggleSpymaster();
         }
 
+        // رسم الكروت
         function renderGrid() {
             const gridElement = document.getElementById('game-grid');
             gridElement.innerHTML = '';
@@ -290,41 +414,84 @@
             });
         }
 
+        // 5. الضغط على كارت وتحديث السيرفر
         function handleCardClick(index) {
             if (!gameActive || isSpymaster || cards[index].revealed) return;
 
             let card = cards[index];
             card.revealed = true;
-            renderGrid();
+
+            let newRedScore = redRemaining;
+            let newBlueScore = blueRemaining;
+            let newTurn = currentTurn;
+            let newActive = gameActive;
+            let newWinner = winnerInfo;
 
             if (card.role === 'assassin') {
-                gameOver(currentTurn === 'red' ? 'blue' : 'red', 'القاتل! الكارت الأسود دمر الفريق.');
-                return;
-            }
-
-            if (card.role === 'red') {
-                redRemaining--;
-                if (redRemaining === 0) gameOver('red', 'الفريق الأحمر لقى كل الكروت بتاعته!');
-                else if (currentTurn !== 'red') endTurn(); // لو الأزرق اختار أحمر بالغلط
+                newActive = false;
+                newWinner = { winner: currentTurn === 'red' ? 'blue' : 'red', reason: 'القاتل! الكارت الأسود دمر الفريق.' };
+                cards.forEach(c => c.revealed = true);
+            } 
+            else if (card.role === 'red') {
+                newRedScore--;
+                if (newRedScore === 0) {
+                    newActive = false;
+                    newWinner = { winner: 'red', reason: 'الفريق الأحمر لقى كل الكروت بتاعته!' };
+                    cards.forEach(c => c.revealed = true);
+                } else if (currentTurn !== 'red') {
+                    newTurn = 'red'; // لو الأزرق اختار أحمر بالغلط
+                }
             } 
             else if (card.role === 'blue') {
-                blueRemaining--;
-                if (blueRemaining === 0) gameOver('blue', 'الفريق الأزرق لقى كل الكروت بتاعته!');
-                else if (currentTurn !== 'blue') endTurn(); // لو الأحمر اختار أزرق بالغلط
+                newBlueScore--;
+                if (newBlueScore === 0) {
+                    newActive = false;
+                    newWinner = { winner: 'blue', reason: 'الفريق الأزرق لقى كل الكروت بتاعته!' };
+                    cards.forEach(c => c.revealed = true);
+                } else if (currentTurn !== 'blue') {
+                    newTurn = 'blue'; // لو الأحمر اختار أزرق بالغلط
+                }
             } 
             else if (card.role === 'neutral') {
-                endTurn(); // الكارت المدني بينهي الدور فوراً
+                newTurn = currentTurn === 'red' ? 'blue' : 'red';
             }
 
-            updateUI();
+            // رفع كل التحديثات للسيرفر
+            db.ref('codenames/' + currentRoom).update({
+                cards: cards,
+                currentTurn: newTurn,
+                redRemaining: newRedScore,
+                blueRemaining: newBlueScore,
+                gameActive: newActive,
+                winnerInfo: newWinner
+            });
         }
 
+        // إنهاء الدور
         function endTurn() {
             if (!gameActive) return;
-            currentTurn = currentTurn === 'red' ? 'blue' : 'red';
-            updateUI();
+            const newTurn = currentTurn === 'red' ? 'blue' : 'red';
+            db.ref('codenames/' + currentRoom).update({ currentTurn: newTurn });
         }
 
+        // تفعيل وإلغاء وضع القائد (بيتم بشكل محلي على الجهاز فقط)
+        function toggleSpymaster() {
+            isSpymaster = !isSpymaster;
+            const gridElement = document.getElementById('game-grid');
+            const spyBtn = document.getElementById('spy-btn');
+            
+            if (isSpymaster) {
+                gridElement.classList.add('spymaster-mode');
+                spyBtn.style.backgroundColor = "#8e44ad";
+                spyBtn.innerText = "إلغاء نظرة القائد 🚫";
+            } else {
+                gridElement.classList.remove('spymaster-mode');
+                spyBtn.style.backgroundColor = "#9b59b6";
+                spyBtn.innerText = "نظرة القائد 👁️";
+            }
+        }
+
+        // تحديث الواجهة
         function updateUI() {
             document.getElementById('red-score').innerText = `الأحمر: ${redRemaining}`;
             document.getElementById('blue-score').innerText = `الأزرق: ${blueRemaining}`;
@@ -333,47 +500,32 @@
             if (currentTurn === 'red') {
                 turnDisplay.innerText = "دور فريق: الأحمر";
                 turnDisplay.style.backgroundColor = "var(--red-team)";
-                turnDisplay.style.color = "white";
             } else {
                 turnDisplay.innerText = "دور فريق: الأزرق";
                 turnDisplay.style.backgroundColor = "var(--blue-team)";
-                turnDisplay.style.color = "white";
             }
         }
 
-        function toggleSpymaster() {
-            isSpymaster = !isSpymaster;
-            const gridElement = document.getElementById('game-grid');
-            if (isSpymaster) {
-                gridElement.classList.add('spymaster-mode');
-            } else {
-                gridElement.classList.remove('spymaster-mode');
-            }
-        }
-
-        function gameOver(winner, reason) {
-            gameActive = false;
+        // فحص وإظهار نافذة الفوز
+        function checkWinnerModal() {
             const modal = document.getElementById('game-over-modal');
-            const title = document.getElementById('modal-title');
-            const desc = document.getElementById('modal-desc');
+            if (!gameActive && winnerInfo) {
+                const title = document.getElementById('modal-title');
+                const desc = document.getElementById('modal-desc');
 
-            modal.classList.add('active');
-            
-            if (winner === 'red') {
-                title.innerText = "🏆 الفريق الأحمر فاز! 🏆";
-                title.style.color = "var(--red-team)";
+                modal.classList.add('active');
+                if (winnerInfo.winner === 'red') {
+                    title.innerText = "🏆 الفريق الأحمر فاز! 🏆";
+                    title.style.color = "var(--red-team)";
+                } else {
+                    title.innerText = "🏆 الفريق الأزرق فاز! 🏆";
+                    title.style.color = "var(--blue-team)";
+                }
+                desc.innerText = winnerInfo.reason;
             } else {
-                title.innerText = "🏆 الفريق الأزرق فاز! 🏆";
-                title.style.color = "var(--blue-team)";
+                modal.classList.remove('active');
             }
-            desc.innerText = reason;
-            
-            // كشف كل الكروت في النهاية
-            cards.forEach(c => c.revealed = true);
-            renderGrid();
         }
-
-        window.onload = initGame;
     </script>
 </body>
 </html>
