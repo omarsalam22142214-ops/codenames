@@ -1,281 +1,366 @@
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>كود نيمز أونلاين</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>كود نيمز أونلاين | النسخة الاحترافية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
         :root {
-            --red-team: #e74c3c;
-            --blue-team: #3498db;
-            --neutral: #ebd5b3;
-            --assassin: #2c3e50;
-            --bg-color: #1a1a2e;
-            --text-color: #ffffff;
-            --card-front: #ffffff;
-            --card-text: #2c3e50;
+            --red-team: #ff4757;
+            --blue-team: #1e90ff;
+            --neutral: #d2dae2;
+            --assassin: #2f3542;
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
             font-family: 'Cairo', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
+            background: radial-gradient(circle at top, #1e293b, var(--bg-dark));
+            color: var(--text-main);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
+            padding: 20px;
         }
 
-        /* شاشات اللعبة */
-        #lobby-screen, #game-screen { display: none; width: 100%; max-width: 1000px; }
-        .active-screen { display: flex !important; flex-direction: column; align-items: center; }
+        /* Utilities */
+        .hidden { display: none !important; }
+        
+        /* Screens */
+        #lobby-screen, #game-screen {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.5s ease;
+        }
 
-        /* ستايل اللوبي */
-        .lobby-container {
-            background-color: rgba(255, 255, 255, 0.05);
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Lobby Styles */
+        .lobby-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
             padding: 40px;
-            border-radius: 15px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
             text-align: center;
             width: 100%;
-            max-width: 400px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .lobby-container input {
-            width: 100%;
-            padding: 12px;
-            margin: 15px 0;
-            border-radius: 8px;
-            border: none;
-            text-align: center;
-            font-family: 'Cairo';
-            font-size: 18px;
-            box-sizing: border-box;
-        }
-        .room-display {
-            font-size: 32px;
-            color: #2ecc71;
-            letter-spacing: 5px;
-            margin: 15px 0;
-            font-weight: bold;
+            max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            margin-top: 50px;
         }
 
-        /* ستايل اللعبة الأساسي */
-        .header {
+        .lobby-card h1 {
+            font-size: 3rem;
+            background: -webkit-linear-gradient(45deg, var(--blue-team), #2ed573);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            font-weight: 900;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 12px;
+            border: 2px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            color: white;
+            text-align: center;
+            font-family: inherit;
+            font-size: 1.2rem;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--blue-team);
+        }
+
+        /* Buttons */
+        .btn {
+            font-family: inherit;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover { transform: translateY(-3px); filter: brightness(1.1); }
+        .btn:active { transform: translateY(1px); }
+
+        .btn-primary { background: #2ed573; color: #fff; }
+        .btn-secondary { background: var(--blue-team); color: #fff; }
+        .btn-warning { background: #ffa502; color: #fff; }
+        .btn-danger { background: var(--red-team); color: #fff; }
+        .btn-spymaster { background: #9b59b6; color: #fff; }
+        .btn-spymaster.active { background: #8e44ad; box-shadow: inset 0 3px 10px rgba(0,0,0,0.3); }
+
+        /* Game Header */
+        .header-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 15px 30px;
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            width: 100%;
-            margin-bottom: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px 30px;
-            border-radius: 15px;
-            box-sizing: border-box;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            margin-bottom: 25px;
+            backdrop-filter: blur(5px);
         }
 
         .score-board {
             display: flex;
-            gap: 30px;
-            font-size: 24px;
-            font-weight: bold;
+            gap: 20px;
         }
 
-        .score-red { color: var(--red-team); }
-        .score-blue { color: var(--blue-team); }
+        .score-badge {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .score-badge.red { background: var(--red-team); }
+        .score-badge.blue { background: var(--blue-team); }
 
         .turn-indicator {
-            font-size: 22px;
-            font-weight: 900;
-            padding: 5px 15px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            transition: all 0.4s;
         }
 
+        /* Game Grid */
         .controls {
             display: flex;
             gap: 15px;
             margin-bottom: 25px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        button {
-            font-family: 'Cairo', sans-serif;
-            padding: 10px 25px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
-        .controls button { width: auto; }
-
-        button:hover { transform: translateY(-2px); opacity: 0.9; }
-        button:active { transform: translateY(0); }
-
-        .btn-new { background-color: #2ecc71; color: white; }
-        .btn-spy { background-color: #9b59b6; color: white; }
-        .btn-end-turn { background-color: #f1c40f; color: #2c3e50; }
-        .btn-leave { background-color: #e74c3c; color: white; margin-top: 20px; }
+        .controls .btn { width: auto; min-width: 150px; }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
+            gap: 15px;
             width: 100%;
+            perspective: 1000px; /* للـ 3D Flip */
         }
 
-        .card {
-            background-color: var(--card-front);
-            color: var(--card-text);
+        /* 3D Card Implementation */
+        .card-container {
+            width: 100%;
             height: 90px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            border-radius: 10px;
-            box-shadow: 0 6px 10px rgba(0,0,0,0.15);
             cursor: pointer;
-            font-size: 20px;
-            font-weight: 900;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            user-select: none;
+        }
+
+        .card-inner {
+            width: 100%;
+            height: 100%;
             position: relative;
-            overflow: hidden;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
         }
 
-        .card:hover:not(.revealed) {
-            transform: translateY(-5px) scale(1.03);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-
-        .card.revealed {
-            transform: scale(0.95);
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-            color: white;
+        .card-container.revealed .card-inner {
+            transform: rotateY(180deg);
             cursor: default;
         }
 
-        .card.revealed.red { background-color: var(--red-team); }
-        .card.revealed.blue { background-color: var(--blue-team); }
-        .card.revealed.neutral { background-color: var(--neutral); color: var(--card-text); }
-        .card.revealed.assassin { background-color: var(--assassin); }
-
-        .spymaster-mode .card:not(.revealed)::after {
-            content: '';
+        .card-front, .card-back {
+            width: 100%;
+            height: 100%;
             position: absolute;
-            top: 5px; right: 5px; bottom: 5px; left: 5px;
-            border-radius: 6px;
-            border: 4px solid transparent;
-            pointer-events: none;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
         }
 
-        .spymaster-mode .card.red:not(.revealed)::after { border-color: rgba(231, 76, 60, 0.6); background: rgba(231, 76, 60, 0.1); }
-        .spymaster-mode .card.blue:not(.revealed)::after { border-color: rgba(52, 152, 219, 0.6); background: rgba(52, 152, 219, 0.1); }
-        .spymaster-mode .card.neutral:not(.revealed)::after { border-color: rgba(235, 213, 179, 0.6); background: rgba(235, 213, 179, 0.2); }
-        .spymaster-mode .card.assassin:not(.revealed)::after { border-color: rgba(44, 62, 80, 0.8); background: rgba(44, 62, 80, 0.2); }
+        .card-front {
+            background: #fff;
+            color: #2c3e50;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
 
+        .card-container:not(.revealed):hover .card-front {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border-color: #cbd5e1;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        /* Colors for revealed cards */
+        .card-back.red { background: var(--red-team); }
+        .card-back.blue { background: var(--blue-team); }
+        .card-back.neutral { background: var(--neutral); color: #2c3e50; }
+        .card-back.assassin { background: var(--assassin); }
+
+        /* Spymaster Mode Effects */
+        .spymaster-mode .card-container:not(.revealed) .card-front::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 10px;
+            border: 4px solid transparent;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .spymaster-mode .card-container.red:not(.revealed) .card-front::after { border-color: var(--red-team); background: rgba(255, 71, 87, 0.1); }
+        .spymaster-mode .card-container.blue:not(.revealed) .card-front::after { border-color: var(--blue-team); background: rgba(30, 144, 255, 0.1); }
+        .spymaster-mode .card-container.neutral:not(.revealed) .card-front::after { border-color: #a4b0be; background: rgba(210, 218, 226, 0.2); }
+        .spymaster-mode .card-container.assassin:not(.revealed) .card-front::after { border-color: var(--assassin); background: rgba(47, 53, 66, 0.2); }
+
+        /* Modal Styles */
         .modal-overlay {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s ease;
             z-index: 1000;
         }
 
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
 
         .modal-content {
-            background: white;
-            color: #2c3e50;
+            background: var(--bg-dark);
+            border: 1px solid var(--glass-border);
             padding: 40px;
-            border-radius: 15px;
+            border-radius: 20px;
             text-align: center;
-            transform: scale(0.7);
-            transition: transform 0.3s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 400px;
+            width: 90%;
         }
 
         .modal-overlay.active .modal-content { transform: scale(1); }
-        .modal-content h2 { font-size: 36px; margin-top: 0; }
-        .modal-content p { font-size: 20px; }
+        .modal-content h2 { font-size: 2.5rem; margin-bottom: 15px; }
 
         @media (max-width: 768px) {
-            .grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }
-            .card { height: 70px; font-size: 14px; }
-            .header { flex-direction: column; gap: 10px; }
-        }
-        @media (max-width: 480px) {
-            .grid { grid-template-columns: repeat(4, 1fr); }
-            .card { font-size: 13px; }
+            .grid { gap: 8px; }
+            .card-container { height: 75px; }
+            .card-front { font-size: 1rem; }
+            .header-panel { flex-direction: column; gap: 15px; text-align: center; }
+            .controls .btn { width: 100%; }
         }
     </style>
 </head>
 <body>
 
-    <div id="lobby-screen" class="active-screen">
-        <h1 style="color: #3498db; font-size: 40px; margin-bottom: 5px;">كود نيمز</h1>
-        <p style="color: #8892b0; margin-bottom: 30px;">نسخة الأونلاين - العب مع أصحابك</p>
-        
-        <div class="lobby-container">
-            <button class="btn-new" onclick="createNewRoom()">🆕 إنشاء غرفة جديدة</button>
-            <div style="margin: 30px 0; border-bottom: 1px solid rgba(255,255,255,0.1);"></div>
-            <p>أو ادخل رقم غرفة موجودة:</p>
-            <input type="number" id="join-room-input" placeholder="مثال: 1234">
-            <button class="btn-spy" onclick="joinExistingRoom()">🔑 انضمام للغرفة</button>
+    <div id="lobby-screen">
+        <div class="lobby-card">
+            <h1>كود نيمز</h1>
+            <p style="color: #94a3b8; margin-bottom: 30px;">العب مع أصحابك أونلاين</p>
+            
+            <button class="btn btn-primary" onclick="GameApp.createNewRoom()">
+                <span>➕</span> إنشاء غرفة جديدة
+            </button>
+            
+            <div style="margin: 30px 0; border-bottom: 1px solid var(--glass-border);"></div>
+            
+            <div class="input-group">
+                <input type="text" id="join-room-input" placeholder="أدخل رقم الغرفة (مثال: 1234)" autocomplete="off">
+                <button class="btn btn-secondary" onclick="GameApp.joinExistingRoom()">
+                    <span>🔑</span> انضمام للغرفة
+                </button>
+            </div>
         </div>
     </div>
 
-    <div id="game-screen">
-        <div style="text-align: center; margin-bottom: 10px; color: #8892b0;">
-            رقم الغرفة: <span id="current-room-display" style="color: #2ecc71; font-weight: bold;"></span>
+    <div id="game-screen" class="hidden">
+        <div style="color: #94a3b8; margin-bottom: 15px; font-size: 1.2rem;">
+            رقم الغرفة: <span id="current-room-display" style="color: #2ed573; font-weight: 900; letter-spacing: 3px;"></span>
         </div>
-        <div class="header">
+
+        <div class="header-panel">
             <div class="score-board">
-                <div class="score-red" id="red-score">الأحمر: 9</div>
-                <div class="score-blue" id="blue-score">الأزرق: 8</div>
+                <div class="score-badge red" id="red-score">أحمر: 0</div>
+                <div class="score-badge blue" id="blue-score">أزرق: 0</div>
             </div>
-            <div id="turn-display" class="turn-indicator" style="background-color: var(--red-team); color: white;">دور فريق: الأحمر</div>
+            <div id="turn-display" class="turn-indicator">جاري التحميل...</div>
         </div>
 
         <div class="controls">
-            <button class="btn-new" onclick="startNewMatch()">لعبة جديدة 🔄</button>
-            <button class="btn-spy" onclick="toggleSpymaster()" id="spy-btn">نظرة القائد 👁️</button>
-            <button class="btn-end-turn" onclick="endTurn()">إنهاء الدور ⏭️</button>
+            <button class="btn btn-warning" onclick="GameApp.startNewMatch()">🔄 دور جديد</button>
+            <button class="btn btn-spymaster" id="spy-btn" onclick="GameApp.toggleSpymaster()">👁️ نظرة القائد</button>
+            <button class="btn btn-secondary" onclick="GameApp.endTurn()">⏭️ إنهاء الدور</button>
         </div>
 
         <div id="game-grid" class="grid"></div>
         
-        <button class="btn-leave" onclick="location.reload()">خروج من الغرفة 🚪</button>
+        <button class="btn btn-danger" onclick="location.reload()" style="margin-top: 30px; max-width: 300px;">
+            🚪 خروج من الغرفة
+        </button>
     </div>
 
     <div class="modal-overlay" id="game-over-modal">
         <div class="modal-content">
-            <h2 id="modal-title">انتهت اللعبة!</h2>
-            <p id="modal-desc"></p>
-            <button class="btn-new" onclick="startNewMatch()">العب دور جديد</button>
-            <button class="btn-leave" onclick="location.reload()" style="margin-top: 10px;">خروج</button>
+            <h2 id="modal-title"></h2>
+            <p id="modal-desc" style="font-size: 1.2rem; color: #cbd5e1; margin-bottom: 25px;"></p>
+            <button class="btn btn-primary" onclick="GameApp.startNewMatch()">العب دور كمان</button>
+            <button class="btn btn-danger" onclick="location.reload()" style="margin-top: 15px;">خروج</button>
         </div>
     </div>
 
     <script>
-        // إعدادات Firebase الخاصة بيك (جاهزة وشغالة)
+        // إعدادات Firebase (زي ما هي عندك)
         const firebaseConfig = {
             apiKey: "AIzaSyBtIkF-UhkeFa-cxutgJAQpR7K_IjKxloc",
             authDomain: "spygame-337ee.firebaseapp.com",
@@ -291,241 +376,247 @@
         }
         const db = firebase.database();
 
-        // بنك الكلمات
-        const wordBank = [
-            "مصر", "أسد", "بحر", "قمر", "شمس", "قلم", "كتاب", "هرم", "طائرة", "قطار",
-            "قهوة", "شجرة", "عجلة", "ساعة", "نار", "ثلج", "جبل", "مفتاح", "خاتم", "سيف",
-            "طبيب", "مدرسة", "مستشفى", "شرطة", "سفينة", "فضاء", "نجمة", "مطر", "ذهب", "فضة",
-            "حديد", "خشب", "باب", "شباك", "فيل", "كلب", "قطة", "حصان", "نمر", "فأر",
-            "بطة", "تفاحة", "موز", "عنب", "رمل", "زجاج", "عطر", "صوت", "لون", "حلم"
-        ];
+        // Object لترتيب وتنظيم اللعبة بالكامل
+        const GameApp = (() => {
+            // متغيرات الحالة الداخلية (State)
+            let state = {
+                roomCode: "",
+                cards: [],
+                currentTurn: "",
+                redRemaining: 0,
+                blueRemaining: 0,
+                gameActive: false,
+                winnerInfo: null,
+                isSpymaster: false
+            };
 
-        // متغيرات اللعبة
-        let currentRoom = "";
-        let cards = [];
-        let isSpymaster = false;
-        let currentTurn = '';
-        let redRemaining = 0;
-        let blueRemaining = 0;
-        let gameActive = false;
-        let winnerInfo = null;
-
-        // دوال التنقل
-        function showGameScreen() {
-            document.getElementById('lobby-screen').classList.remove('active-screen');
-            document.getElementById('game-screen').classList.add('active-screen');
-            document.getElementById('current-room-display').innerText = currentRoom;
-        }
-
-        // 1. إنشاء غرفة
-        function createNewRoom() {
-            currentRoom = Math.floor(1000 + Math.random() * 9000).toString();
-            startNewMatch(); // تجهيز اللعبة ورفعها للداتابيز
-            showGameScreen();
-            listenToRoom();
-        }
-
-        // 2. الانضمام لغرفة
-        function joinExistingRoom() {
-            const inputCode = document.getElementById('join-room-input').value.trim();
-            if(!inputCode) return alert("اكتب رقم الغرفة الأول!");
-            
-            db.ref('codenames/' + inputCode).once('value').then(snapshot => {
-                if (snapshot.exists()) {
-                    currentRoom = inputCode;
-                    showGameScreen();
-                    listenToRoom();
-                } else {
-                    alert("رقم الغرفة غلط أو مش موجودة!");
-                }
-            });
-        }
-
-        // 3. مراقبة التحديثات من السيرفر
-        function listenToRoom() {
-            db.ref('codenames/' + currentRoom).on('value', snapshot => {
-                const data = snapshot.val();
-                if (!data) return;
-
-                cards = data.cards || [];
-                currentTurn = data.currentTurn;
-                redRemaining = data.redRemaining;
-                blueRemaining = data.blueRemaining;
-                gameActive = data.gameActive;
-                winnerInfo = data.winnerInfo;
-
-                renderGrid();
-                updateUI();
-                checkWinnerModal();
-            });
-        }
-
-        function shuffle(array) {
-            return array.sort(() => Math.random() - 0.5);
-        }
-
-        // 4. بدء دور جديد (بيرفع الداتا الجديدة للسيرفر لكل الناس)
-        function startNewMatch() {
-            const startTurn = Math.random() < 0.5 ? 'red' : 'blue';
-            const initialRed = startTurn === 'red' ? 9 : 8;
-            const initialBlue = startTurn === 'blue' ? 9 : 8;
-
-            let selectedWords = shuffle([...wordBank]).slice(0, 25);
-            let roles = [
-                ...Array(initialRed).fill('red'),
-                ...Array(initialBlue).fill('blue'),
-                ...Array(1).fill('assassin'),
-                ...Array(7).fill('neutral')
+            // بنك كلمات موسع
+            const WORD_BANK = [
+                "مصر", "أسد", "بحر", "قمر", "شمس", "قلم", "كتاب", "هرم", "طائرة", "قطار",
+                "قهوة", "شجرة", "عجلة", "ساعة", "نار", "ثلج", "جبل", "مفتاح", "خاتم", "سيف",
+                "طبيب", "مدرسة", "مستشفى", "شرطة", "سفينة", "فضاء", "نجمة", "مطر", "ذهب", "فضة",
+                "حديد", "خشب", "باب", "شباك", "فيل", "كلب", "قطة", "حصان", "نمر", "فأر",
+                "بطة", "تفاحة", "موز", "عنب", "رمل", "زجاج", "عطر", "صوت", "لون", "حلم",
+                "تليفون", "كاميرا", "نضارة", "جزيرة", "محفظة", "تذكرة", "شوكولاتة", "صحراء", "نهر", "جسر"
             ];
-            roles = shuffle(roles);
 
-            const newCards = selectedWords.map((word, index) => ({
-                word: word,
-                role: roles[index],
-                revealed: false
-            }));
+            // Helper Functions
+            const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
+            const getEl = (id) => document.getElementById(id);
 
-            // تحديث السيرفر باللعبة الجديدة
-            db.ref('codenames/' + currentRoom).set({
-                cards: newCards,
-                currentTurn: startTurn,
-                redRemaining: initialRed,
-                blueRemaining: initialBlue,
-                gameActive: true,
-                winnerInfo: null
-            });
-            
-            // قفل وضع القائد لو كان مفتوح مع بداية الدور الجديد
-            if(isSpymaster) toggleSpymaster();
-        }
+            // دوال الواجهة (UI Updates)
+            const UI = {
+                showScreen: (screenId) => {
+                    getEl('lobby-screen').classList.add('hidden');
+                    getEl('game-screen').classList.add('hidden');
+                    getEl(screenId).classList.remove('hidden');
+                },
+                updateHeader: () => {
+                    getEl('red-score').innerText = `أحمر: ${state.redRemaining}`;
+                    getEl('blue-score').innerText = `أزرق: ${state.blueRemaining}`;
+                    
+                    const turnDisplay = getEl('turn-display');
+                    if (state.currentTurn === 'red') {
+                        turnDisplay.innerText = "🔴 دور الفريق الأحمر";
+                        turnDisplay.style.backgroundColor = "var(--red-team)";
+                        turnDisplay.style.color = "white";
+                    } else {
+                        turnDisplay.innerText = "🔵 دور الفريق الأزرق";
+                        turnDisplay.style.backgroundColor = "var(--blue-team)";
+                        turnDisplay.style.color = "white";
+                    }
+                },
+                renderGrid: () => {
+                    const grid = getEl('game-grid');
+                    grid.innerHTML = '';
+                    
+                    // Toggle Spymaster Class on grid
+                    if (state.isSpymaster) {
+                        grid.classList.add('spymaster-mode');
+                    } else {
+                        grid.classList.remove('spymaster-mode');
+                    }
 
-        // رسم الكروت
-        function renderGrid() {
-            const gridElement = document.getElementById('game-grid');
-            gridElement.innerHTML = '';
+                    state.cards.forEach((card, index) => {
+                        const cardEl = document.createElement('div');
+                        // ندي الكلاسات للكارت نفسه عشان الـ Spymaster يشوف الألوان
+                        cardEl.className = `card-container ${card.role} ${card.revealed ? 'revealed' : ''}`;
+                        cardEl.onclick = () => Actions.handleCardClick(index);
 
-            cards.forEach((card, index) => {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = `card ${card.role} ${card.revealed ? 'revealed' : ''}`;
-                cardDiv.innerText = card.word;
-
-                cardDiv.onclick = () => handleCardClick(index);
-                gridElement.appendChild(cardDiv);
-            });
-        }
-
-        // 5. الضغط على كارت وتحديث السيرفر
-        function handleCardClick(index) {
-            if (!gameActive || isSpymaster || cards[index].revealed) return;
-
-            let card = cards[index];
-            card.revealed = true;
-
-            let newRedScore = redRemaining;
-            let newBlueScore = blueRemaining;
-            let newTurn = currentTurn;
-            let newActive = gameActive;
-            let newWinner = winnerInfo;
-
-            if (card.role === 'assassin') {
-                newActive = false;
-                newWinner = { winner: currentTurn === 'red' ? 'blue' : 'red', reason: 'القاتل! الكارت الأسود دمر الفريق.' };
-                cards.forEach(c => c.revealed = true);
-            } 
-            else if (card.role === 'red') {
-                newRedScore--;
-                if (newRedScore === 0) {
-                    newActive = false;
-                    newWinner = { winner: 'red', reason: 'الفريق الأحمر لقى كل الكروت بتاعته!' };
-                    cards.forEach(c => c.revealed = true);
-                } else if (currentTurn !== 'red') {
-                    newTurn = 'red'; // لو الأزرق اختار أحمر بالغلط
+                        // بناء الكارت الـ 3D
+                        cardEl.innerHTML = `
+                            <div class="card-inner">
+                                <div class="card-front">${card.word}</div>
+                                <div class="card-back ${card.role}">
+                                    ${card.role === 'assassin' ? '☠️' : ''}
+                                </div>
+                            </div>
+                        `;
+                        grid.appendChild(cardEl);
+                    });
+                },
+                checkWinner: () => {
+                    const modal = getEl('game-over-modal');
+                    if (!state.gameActive && state.winnerInfo) {
+                        const title = getEl('modal-title');
+                        modal.classList.add('active');
+                        
+                        if (state.winnerInfo.winner === 'red') {
+                            title.innerHTML = "🏆 الأحمر فاز!";
+                            title.style.color = "var(--red-team)";
+                        } else {
+                            title.innerHTML = "🏆 الأزرق فاز!";
+                            title.style.color = "var(--blue-team)";
+                        }
+                        getEl('modal-desc').innerText = state.winnerInfo.reason;
+                    } else {
+                        modal.classList.remove('active');
+                    }
                 }
-            } 
-            else if (card.role === 'blue') {
-                newBlueScore--;
-                if (newBlueScore === 0) {
-                    newActive = false;
-                    newWinner = { winner: 'blue', reason: 'الفريق الأزرق لقى كل الكروت بتاعته!' };
-                    cards.forEach(c => c.revealed = true);
-                } else if (currentTurn !== 'blue') {
-                    newTurn = 'blue'; // لو الأحمر اختار أزرق بالغلط
+            };
+
+            // أحداث اللعبة (Logic & Database Actions)
+            const Actions = {
+                listenToRoom: () => {
+                    db.ref(`codenames/${state.roomCode}`).on('value', snapshot => {
+                        const data = snapshot.val();
+                        if (!data) return;
+
+                        // تحديث الـ State المحلية
+                        Object.assign(state, data);
+                        
+                        // تحديث الواجهة
+                        UI.updateHeader();
+                        UI.renderGrid();
+                        UI.checkWinner();
+                    });
+                },
+                startNewMatch: () => {
+                    const startTurn = Math.random() < 0.5 ? 'red' : 'blue';
+                    const initialRed = startTurn === 'red' ? 9 : 8;
+                    const initialBlue = startTurn === 'blue' ? 9 : 8;
+
+                    let selectedWords = shuffle(WORD_BANK).slice(0, 25);
+                    let roles = shuffle([
+                        ...Array(initialRed).fill('red'),
+                        ...Array(initialBlue).fill('blue'),
+                        'assassin',
+                        ...Array(7).fill('neutral')
+                    ]);
+
+                    const newCards = selectedWords.map((word, index) => ({
+                        word: word,
+                        role: roles[index],
+                        revealed: false
+                    }));
+
+                    // لو القائد فاتح النظرة، نقفلها مع بداية الدور الجديد احتراماً للرولز
+                    if(state.isSpymaster) Actions.toggleSpymaster();
+                    getEl('game-over-modal').classList.remove('active');
+
+                    // رفع الداتا
+                    db.ref(`codenames/${state.roomCode}`).set({
+                        cards: newCards,
+                        currentTurn: startTurn,
+                        redRemaining: initialRed,
+                        blueRemaining: initialBlue,
+                        gameActive: true,
+                        winnerInfo: null
+                    });
+                },
+                handleCardClick: (index) => {
+                    if (!state.gameActive || state.isSpymaster || state.cards[index].revealed) return;
+
+                    let card = state.cards[index];
+                    card.revealed = true;
+
+                    let updates = { cards: state.cards };
+
+                    if (card.role === 'assassin') {
+                        updates.gameActive = false;
+                        updates.winnerInfo = { 
+                            winner: state.currentTurn === 'red' ? 'blue' : 'red', 
+                            reason: 'كارت القاتل! ☠️ الفريق التاني كسب.' 
+                        };
+                        // كشف كل الكروت
+                        updates.cards.forEach(c => c.revealed = true);
+                    } 
+                    else if (card.role === 'red') {
+                        updates.redRemaining = state.redRemaining - 1;
+                        if (updates.redRemaining === 0) {
+                            updates.gameActive = false;
+                            updates.winnerInfo = { winner: 'red', reason: 'الأحمر لقى كل الكروت بتاعته! 🎉' };
+                            updates.cards.forEach(c => c.revealed = true);
+                        } else if (state.currentTurn !== 'red') {
+                            updates.currentTurn = 'red'; 
+                        }
+                    } 
+                    else if (card.role === 'blue') {
+                        updates.blueRemaining = state.blueRemaining - 1;
+                        if (updates.blueRemaining === 0) {
+                            updates.gameActive = false;
+                            updates.winnerInfo = { winner: 'blue', reason: 'الأزرق لقى كل الكروت بتاعته! 🎉' };
+                            updates.cards.forEach(c => c.revealed = true);
+                        } else if (state.currentTurn !== 'blue') {
+                            updates.currentTurn = 'blue';
+                        }
+                    } 
+                    else if (card.role === 'neutral') {
+                        updates.currentTurn = state.currentTurn === 'red' ? 'blue' : 'red';
+                    }
+
+                    db.ref(`codenames/${state.roomCode}`).update(updates);
+                },
+                toggleSpymaster: () => {
+                    state.isSpymaster = !state.isSpymaster;
+                    const btn = getEl('spy-btn');
+                    
+                    if (state.isSpymaster) {
+                        btn.classList.add('active');
+                        btn.innerHTML = "🚫 إخفاء نظرة القائد";
+                    } else {
+                        btn.classList.remove('active');
+                        btn.innerHTML = "👁️ نظرة القائد";
+                    }
+                    UI.renderGrid();
                 }
-            } 
-            else if (card.role === 'neutral') {
-                newTurn = currentTurn === 'red' ? 'blue' : 'red';
-            }
+            };
 
-            // رفع كل التحديثات للسيرفر
-            db.ref('codenames/' + currentRoom).update({
-                cards: cards,
-                currentTurn: newTurn,
-                redRemaining: newRedScore,
-                blueRemaining: newBlueScore,
-                gameActive: newActive,
-                winnerInfo: newWinner
-            });
-        }
-
-        // إنهاء الدور
-        function endTurn() {
-            if (!gameActive) return;
-            const newTurn = currentTurn === 'red' ? 'blue' : 'red';
-            db.ref('codenames/' + currentRoom).update({ currentTurn: newTurn });
-        }
-
-        // تفعيل وإلغاء وضع القائد (بيتم بشكل محلي على الجهاز فقط)
-        function toggleSpymaster() {
-            isSpymaster = !isSpymaster;
-            const gridElement = document.getElementById('game-grid');
-            const spyBtn = document.getElementById('spy-btn');
-            
-            if (isSpymaster) {
-                gridElement.classList.add('spymaster-mode');
-                spyBtn.style.backgroundColor = "#8e44ad";
-                spyBtn.innerText = "إلغاء نظرة القائد 🚫";
-            } else {
-                gridElement.classList.remove('spymaster-mode');
-                spyBtn.style.backgroundColor = "#9b59b6";
-                spyBtn.innerText = "نظرة القائد 👁️";
-            }
-        }
-
-        // تحديث الواجهة
-        function updateUI() {
-            document.getElementById('red-score').innerText = `الأحمر: ${redRemaining}`;
-            document.getElementById('blue-score').innerText = `الأزرق: ${blueRemaining}`;
-            
-            const turnDisplay = document.getElementById('turn-display');
-            if (currentTurn === 'red') {
-                turnDisplay.innerText = "دور فريق: الأحمر";
-                turnDisplay.style.backgroundColor = "var(--red-team)";
-            } else {
-                turnDisplay.innerText = "دور فريق: الأزرق";
-                turnDisplay.style.backgroundColor = "var(--blue-team)";
-            }
-        }
-
-        // فحص وإظهار نافذة الفوز
-        function checkWinnerModal() {
-            const modal = document.getElementById('game-over-modal');
-            if (!gameActive && winnerInfo) {
-                const title = document.getElementById('modal-title');
-                const desc = document.getElementById('modal-desc');
-
-                modal.classList.add('active');
-                if (winnerInfo.winner === 'red') {
-                    title.innerText = "🏆 الفريق الأحمر فاز! 🏆";
-                    title.style.color = "var(--red-team)";
-                } else {
-                    title.innerText = "🏆 الفريق الأزرق فاز! 🏆";
-                    title.style.color = "var(--blue-team)";
+            // الـ API اللي هنكشفها للـ HTML
+            return {
+                createNewRoom: () => {
+                    // توليد رقم غرفة مكون من 4 أرقام
+                    state.roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+                    getEl('current-room-display').innerText = state.roomCode;
+                    
+                    UI.showScreen('game-screen');
+                    Actions.startNewMatch();
+                    Actions.listenToRoom();
+                },
+                joinExistingRoom: () => {
+                    const inputCode = getEl('join-room-input').value.trim();
+                    if (!inputCode) return alert("اكتب رقم الغرفة الأول يا ريس!");
+                    
+                    db.ref(`codenames/${inputCode}`).once('value').then(snapshot => {
+                        if (snapshot.exists()) {
+                            state.roomCode = inputCode;
+                            getEl('current-room-display').innerText = state.roomCode;
+                            UI.showScreen('game-screen');
+                            Actions.listenToRoom();
+                        } else {
+                            alert("الغرفة دي مش موجودة، اتأكد من الرقم وجرب تاني.");
+                        }
+                    });
+                },
+                startNewMatch: Actions.startNewMatch,
+                toggleSpymaster: Actions.toggleSpymaster,
+                endTurn: () => {
+                    if (!state.gameActive) return;
+                    const newTurn = state.currentTurn === 'red' ? 'blue' : 'red';
+                    db.ref(`codenames/${state.roomCode}`).update({ currentTurn: newTurn });
                 }
-                desc.innerText = winnerInfo.reason;
-            } else {
-                modal.classList.remove('active');
-            }
-        }
+            };
+        })();
     </script>
 </body>
 </html>
